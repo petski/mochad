@@ -38,6 +38,7 @@ int write_usb(unsigned char *buf, size_t len);
 
 int statusprintf(int fd, const char *fmt, ...);
 int sockprintf(int fd, const char *fmt, ...);
+int sockprintf_json(int fd, const char *command, const char *fmt, ...);
 
 void hexdump(void *p, size_t len);
 
@@ -49,4 +50,25 @@ int or20client(int fd);
 
 int del_client(int fd);
 
+struct client *client_find(int fd);
+void client_add(int fd);
 
+#define OFMT_NONE       (0)
+#define OFMT_NORMAL     (1)
+#define OFMT_NORMALRAW  (2)
+#define OFMT_JSON       (3)
+
+#define IFMT_NORMAL      (0)
+#define IFMT_XML         (1)
+#define IFMT_OPEN_REMOTE (2)
+
+/* Client sockets */
+#include <poll.h>
+#include "uthash.h"
+struct client {
+    int fd;               /* we'll use this field as the key */
+    int ofmt;             /* Output format */
+    int ifmt;             /* Input format */
+    struct pollfd pollfd; 
+    UT_hash_handle hh; /* makes this structure hashable */
+};

@@ -622,6 +622,11 @@ int processcommandline(int fd, char *aLine)
     unsigned long rfaddr;
     int rf8bitaddr, rfcamkey;
 
+    int changed = 0;
+    struct client *s = client_find(fd);
+
+    if(! s) return -1;
+
     strupper(aLine);
     dbprintf("%lu:%s\n", (unsigned long)strlen(aLine), aLine);
     if (strcmp(aLine, "<POLICY-FILE-REQUEST/>") == 0) {
@@ -631,7 +636,60 @@ int processcommandline(int fd, char *aLine)
     }
     command = strtok(aLine, " ");
     if (command) {
-        if (strcmp(command, "PL") == 0) {
+        // VER (get version)
+        if (strcmp(command, "VER") == 0) {
+            if (s->ofmt == OFMT_JSON) {
+                sockprintf_json(fd, command, "[ \"%s\", \"%s\" ]", PACKAGE_NAME, PACKAGE_VERSION);
+            }
+            else if (s->ofmt == OFMT_NORMAL || s->ofmt == OFMT_NORMALRAW) { 
+                sockprintf(fd, "Version: %s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+            }
+            // OFMT_NONE is skipped
+            return 0;
+        }
+        // OF (get and set output format)
+        else if (strcmp(command, "OF") == 0) {
+            arg1 = strtok(NULL, " ");
+            changed = 0;
+            if (arg1) {
+                if(strcmp(arg1, "NONE") == 0) { 
+                    if(s->ofmt != OFMT_NONE) { 
+                        s->ofmt = OFMT_NONE;
+                        changed = 1;
+                    }
+                }
+                else if(strcmp(arg1, "NORMAL") == 0) { 
+                    if(s->ofmt != OFMT_NORMAL) { 
+                        s->ofmt = OFMT_NORMAL;
+                        changed = 1;
+                    }
+                }
+                else if(strcmp(arg1, "NORMALRAW") == 0) { 
+                    if(s->ofmt != OFMT_NORMALRAW) { 
+                        s->ofmt = OFMT_NORMALRAW;
+                        changed = 1;
+                    }
+                }
+                else if(strcmp(arg1, "JSON") == 0) { 
+                    if(s->ofmt != OFMT_JSON) { 
+                        s->ofmt = OFMT_JSON;
+                        changed = 1;
+                    }
+                }
+                else { 
+                   sockprintf(fd, "Unknown format '%s'\n", arg1);
+                   return -1;
+                }
+            }
+            if (s->ofmt == OFMT_JSON) {
+                sockprintf_json(fd, command, "{ format: \"JSON\", changed: %s", changed ? "true" : "false");
+            }
+            else if (s->ofmt == OFMT_NORMAL || s->ofmt == OFMT_NORMALRAW) { 
+                sockprintf(fd, "Output format is \"NORMAL%s\" (changed: %s)\n", (s->ofmt == OFMT_NORMALRAW ? "RAW" : ""), (changed ? "yes" : "no"));
+            }
+            return 0;
+        }
+        else if (strcmp(command, "PL") == 0) {
             if (or20client(fd)) statusprintf(fd, "ok\n");
             house = getdeviceaddr(&unit);
             dbprintf("house %d unit %d\n", house, unit);

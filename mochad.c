@@ -66,6 +66,8 @@ static size_t NClients;     /* # of valid entries in Clientsocks */
 static size_t NxmlClients;  /* # of valid entries in Clientxmlsocks */
 static size_t Nor20Clients; /* # of valid entries in Clientor20socks */
 
+struct client *clients = NULL;
+
 /**** USB usblib 1.0 ****/
 
 #include <libusb-1.0/libusb.h>
@@ -179,6 +181,86 @@ int sockprintf(int fd, const char *fmt, ...)
     return buflen;
 }
 
+/*
+ * sockprintf alternative for JSON
+ */
+int sockprintf_json(int fd, const char *command, const char *fmt, ...)
+{
+    va_list args;
+    char fmt2[1024];
+    int fmt2len;
+    char dtbuf[80];
+    char buf[1024];
+    int buflen;
+    time_t tm;
+
+    time (&tm);
+    strftime(dtbuf, sizeof(dtbuf), "%FT%T", localtime(&tm));
+
+    fmt2len = snprintf(fmt2, sizeof(fmt2), "{ dt: \"%s\", type: \"%s\", data: %s }\n", dtbuf, command, fmt);
+    if(fmt2len >= sizeof(fmt2)) return -1;
+    fmt2[fmt2len + 1] = '\0';
+
+    va_start(args,fmt);
+    buflen = vsnprintf(buf, sizeof(buf), fmt2, args);
+    va_end(args);
+    if(buflen >= sizeof(buf)) return -1;
+    buf[buflen + 1] = '\0';
+
+    send(fd, buf, strlen(buf), MSG_NOSIGNAL);
+    return 0;
+}
+
+// get client from fd
+struct client *client_find(int fd)
+{
+    struct client *s;
+    HASH_FIND_INT(clients, &fd, s);
+    return s; // NULL if not found
+}
+
+// add client by fd
+void client_add(int fd)
+{
+    struct client *s;
+    struct sockaddr_in locl;
+    socklen_t locllen;
+
+    s = malloc(sizeof(struct client));
+
+    s->fd   = fd;
+    s->ofmt = OFMT_NORMAL;
+
+    // determine input format by source port
+    locllen = sizeof(locl);
+    if (getsockname(fd, (struct sockaddr *)&locl, &locllen) < 0) {
+        dbprintf("getsockname -1/%d\n", errno);
+        return;
+    }
+    dbprintf("locl port %d\n", ntohs(locl.sin_port));
+    
+    switch(ntohs(locl.sin_port)) { 
+        case SERVER_PORT: { 
+            s->ifmt = IFMT_NORMAL; 
+            break;
+        }
+        case (SERVER_PORT + 1): { 
+            s->ifmt = IFMT_XML; 
+            break;
+        }
+        case (SERVER_PORT + 2): { 
+            s->ifmt = IFMT_OPEN_REMOTE; 
+            break;
+        }
+	default: { 
+            s->ifmt = IFMT_NORMAL; 
+	} 
+    }
+
+    HASH_ADD_INT(clients, fd, s);
+}
+
+
 static void _hexdump(void *p, size_t len, char *outbuf, size_t outlen)
 {
     unsigned char *ptr = (unsigned char*) p;
@@ -239,6 +321,7 @@ static int add_client(int fd)
 {
     int i;
 
+    client_add(fd);
     dbprintf("add_client(%d)\n", fd);
     for (i = 0; i < MAXCLISOCKETS; i++) {
         if (Clientsocks[i].fd == -1) {
