@@ -502,7 +502,7 @@ static int find_cm15a(struct libusb_device_handle **devhptr)
         syslog(LOG_NOTICE, (Cm19a) ? "Found CM19A" : "Found CM15A");
         return 0;
     }
-    syslog(LOG_EMERG, "usb_claim_interface failed %d", r);
+    syslog(LOG_EMERG, "usb_claim_interface failed %s", libusb_error_name(r));
     r = libusb_kernel_driver_active(*devhptr, 0);
     if (r < 0) {
         syslog(LOG_EMERG, "Kernel driver check failed %d", r);
