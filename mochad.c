@@ -229,7 +229,7 @@ void client_add(int fd)
     s = malloc(sizeof(struct client));
 
     s->fd   = fd;
-    s->ofmt = OFMT_NORMAL;
+    s->ofmt = raw_data == 1 ? OFMT_NORMALRAW : OFMT_NORMAL;
 
     // determine input format by source port
     locllen = sizeof(locl);
