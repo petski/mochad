@@ -79,6 +79,8 @@ static struct libusb_transfer *IntrIn_transfer = NULL;
 static unsigned char IntrOutBuf[8];
 static unsigned char IntrInBuf[8];
 
+int raw_data = 0;
+
 /*
  * Like printf but print to socket without date/time stamp.
  * Used to send back result of getstatus command.
@@ -943,7 +945,6 @@ static void printcopy(void)
 
 // This affects whether decode.c will show raw frame data for debugging RF connectivity
 // as well as providing raw data for parsing by users like misterhouse's X10_CMxx module.
-int raw_data = 0;
 int main(int argc, char *argv[])
 {
     int rc, i;
