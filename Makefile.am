@@ -9,10 +9,17 @@ EXTRA_DIST = udev/91-usb-x10-controllers.rules hotplug2/20-usb-x10 hotplug2/moch
 	     apps/rfsectopl3.pl apps/x10-tk.py apps/mochad.scr
 
 install-exec-hook:
-	if test -d /etc/udev/rules.d ; then \
-		cp $(abs_top_srcdir)/udev/91-usb-x10-controllers.rules /etc/udev/rules.d ; \
-	fi ;
-	if test -d /etc/hotplug.d/usb ; then \
-		cp $(abs_top_srcdir)/hotplug2/20-usb-x10 /etc/hotplug.d/usb ; \
-		cp $(abs_top_srcdir)/hotplug2/mochad /etc/init.d ; \
+	if test -d /etc/systemd/system ; then \
+		cp $(abs_top_srcdir)/systemd/mochad.service /etc/systemd/system/ ; \
+		systemctl daemon-reload ; \
+		systemctl enable mochad.service ; \
+		systemctl restart mochad ; \
+	else \
+		if test -d /etc/udev/rules.d ; then \
+			cp $(abs_top_srcdir)/udev/91-usb-x10-controllers.rules /etc/udev/rules.d ; \
+		fi ; \
+		if test -d /etc/hotplug.d/usb ; then \
+			cp $(abs_top_srcdir)/hotplug2/20-usb-x10 /etc/hotplug.d/usb ; \
+			cp $(abs_top_srcdir)/hotplug2/mochad /etc/init.d ; \
+		fi ; \
 	fi ;

@@ -1,0 +1,11 @@
+[Unit]
+Description=mochad is a Linux TCP gateway daemon for X10 CM15A/CM15PRO/CM19A
+After=sysinit.target
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/mochad
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
