@@ -1,6 +1,7 @@
 version: '3.4'
 services:
   daemon:
+    image: petski/mochad_daemon:latest
     container_name: mochad
     build:
       context: .
