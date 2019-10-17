@@ -4,6 +4,7 @@ services:
     container_name: mochad
     build:
       context: .
+      target: prod
     devices:
       - /dev/bus/usb/001/004:/dev/bus/usb/001/004
     ports:
