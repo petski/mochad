@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+  daemon:
+    container_name: mochad
+    build:
+      context: .
+    devices:
+      - /dev/bus/usb/001/004:/dev/bus/usb/001/004
+    ports:
+      - 127.0.0.1:1099:1099
+    restart: unless-stopped
